@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:untitled1/data/database.dart';
 import 'package:untitled1/util/dialog_box.dart';
 import 'package:untitled1/util/todo_tile.dart';
 
@@ -10,30 +12,40 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _myBox = Hive.box("mybox");
   final _controller = TextEditingController();
+  ToDoDataBase db = ToDoDataBase();
 
-  List todoList = [
-    ["Do nothing", false],
-    ["Do Anything", true],
-    ["Do All thing", false]
-  ];
+  @override
+  void initState() {
+    // TODO: implement initState
+    if(_myBox.get("TODOLIST") == null){
+      db.createInitialData();
+    }else{
+      db.loadData();
+    }
+    super.initState();
+  }
 
   void checkBoxChanged(bool? value, int index) {
     setState(() {
-      todoList[index][1] = !todoList[index][1];
+      db.todoList[index][1] = !db.todoList[index][1];
     });
+    db.updateDate();
   }
 
   void deleteTask(int index){
     setState(() {
-      todoList.removeAt(index);
+      db.todoList.removeAt(index);
     });
+    db.updateDate();
   }
   void saveNewTask() {
     setState(() {
-      todoList.add([_controller.text.toString(), false]);
+      db.todoList.add([_controller.text.toString(), false]);
       _controller.clear();
     });
+    db.updateDate();
     Navigator.of(context).pop();
   }
 
@@ -64,11 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       backgroundColor: Colors.yellow[200],
       body: ListView.builder(
-          itemCount: todoList.length,
+          itemCount: db.todoList.length,
           itemBuilder: (context, index) {
             return ToDoTile(
-                taskName: todoList[index][0],
-                taskCompleted: todoList[index][1],
+                taskName: db.todoList[index][0],
+                taskCompleted: db.todoList[index][1],
                 onChanged: (value) => checkBoxChanged(value, index),
                 deleteFunction: (context)=>deleteTask(index),
             );
